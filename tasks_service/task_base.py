@@ -8,7 +8,7 @@
 @description   :   Task 父类
 '''
 
-from ..utils.task_status import TaskStatus  
+from ..constants.task_status import TaskStatus  
 import time
 
 

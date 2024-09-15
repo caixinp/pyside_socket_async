@@ -10,8 +10,7 @@
 
 from .socket_client import client_send_request
 from . import b64
-from .task_status import TaskStatus
 from .http_client import HttpClient
 from .parallel_tasks import ParallelTasks
 
-__all__ = ["client_send_request", "b64", "TaskStatus", "HttpClient", "ParallelTasks"]
+__all__ = ["client_send_request", "b64", "HttpClient", "ParallelTasks"]
