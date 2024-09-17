@@ -19,6 +19,7 @@ from .tasks import Tasks
 from .task_base import TaskBase
 from .service_base import ServiceBase
 from .services import Services
+from ..model.result import Result
 
 
 class TS:
@@ -66,7 +67,7 @@ class TS:
         if id is None:
             print(f"{task_name} Task is not exist.")
             return
-        cls.callback.get(id)(response_data_dict) # type: ignore
+        cls.callback.get(id)(Result.dict_to_model(response_data_dict)) # type: ignore
         cls.delete_callback(id)
 
 
