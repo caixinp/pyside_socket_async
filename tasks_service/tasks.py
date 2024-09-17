@@ -30,3 +30,4 @@ class Tasks():
         }) 
         result = TaskClass({"id":id, "args":args}).result_callback() if args is not None else TaskClass().result_callback()
         return result
+    

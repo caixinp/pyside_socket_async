@@ -18,7 +18,28 @@
 
 在开启 socket 服务线程前，动态的检测某路径下的模块，将带有 @task_function 装饰器的方法动态的生成 TSItem类，并将它们添加到 TS 类的 services 和 tasks 中，tasks 会被初始化到 socket 线程中作为待调用的方法，而 services 则是主线程发送调用方法的指令，即但主线程调用 services 中的某个方法后，会向 socket 服务发送一个请求，该请求无需等待结果，socket 服务会开启一个线程调用对应的 task 方法，执行完成后，将结果通过插槽返回给主线程，TS 会通过某种机制将结果返回给对应 service 的回调函数。
 
-## 3. 使用案例
+## 3. TS类的设计与回调管理
+
+1. 回调函数的注册：
+   - 在 TS 类中，有一个字典用于管理回调函数。每当主线程调用某个 service 的方法时，框架会生成一个唯一的标识符（UUID），作为字典中的键，将对应的回调函数作为值存入字典中。
+   - 这种机制允许框架在执行任务时追踪每个请求和其对应的回调。
+2. 任务执行与回调：
+   - 当任务被发送到 socket 服务并执行时，服务会在任务执行完成后，构建一个结果对象，这个对象会包含之前生成的 UUID。
+   - 框架使用 Qt 的插槽机制将结果发送回主线程。
+3. 回调函数的调用：
+   - 主线程接收到结果后，会利用结果中的 UUID 查询 TS 类中存储的字典，找到对应的回调函数。
+   - 找到回调函数后，框架会执行该函数，并将结果传递给它。
+4. 清理工作：
+   - 在回调函数执行完毕后，框架会将字典中对应的键值对（即 UUID 和回调函数的对应关系）删除，一避免内存泄漏和保持字典的简洁。
+
+## 4. 依赖
+```
+pydantic==2.9.1
+PySide6==6.7.2
+requests==2.32.3
+```
+
+## 5. 使用案例
 
 目录结构
 
@@ -121,9 +142,7 @@ class MainWindow(QMainWindow):
         self.pushButtion.clicked.connect(self.test)
     
     def test(self):
-        def callback(result):
-            
-            res = Result.dict_to_model(result)
+        def callback(res: Result):
             if res.status == TaskStatus.SUCCEEDED:
                 print(f"返回结果为：{res.result}")
             else: 
@@ -131,3 +150,15 @@ class MainWindow(QMainWindow):
         
         send_data('test', {}, callback)
 ```
+
+执行
+
+```shell
+python main.py
+```
+
+![执行](img/执行.png)
+
+点击按钮
+
+![点击按钮](img/点击按钮.png)

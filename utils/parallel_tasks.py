@@ -11,6 +11,7 @@
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+
 class ParallelTasks:
     def __init__(self, funcs_and_args:list):
         self.funcs_and_args = funcs_and_args

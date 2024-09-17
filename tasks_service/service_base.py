@@ -8,7 +8,8 @@
 @description   :   Service 父类
 '''
 
-from pyside_socket_async.utils import client_send_request  
+from ..utils import client_send_request  
+from ..model import Result
 
 
 class ServiceBase:
@@ -19,7 +20,7 @@ class ServiceBase:
     def request(self, send_data_dict):
         client_send_request(send_data_dict)
 
-    def callback(self, result):
+    def callback(self, result: Result):
         try:
             print(f"{self.task_name} callback result: {result}")
             self.callback_func(result)

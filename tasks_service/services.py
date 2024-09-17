@@ -28,3 +28,4 @@ class Services:
             return service_class(callback)
         else:
             return service_class
+        

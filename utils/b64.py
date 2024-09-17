@@ -10,6 +10,7 @@
 
 import base64
 
+
 def base64_decode(code:str) -> str:
     """
     Description:

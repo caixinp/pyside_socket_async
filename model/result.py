@@ -18,3 +18,4 @@ class Result(Base):
     task_name: str
     created_at: float
     updated_at: float
+    

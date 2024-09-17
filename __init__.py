@@ -13,7 +13,8 @@ from . import utils
 from . import constants
 from .tasks_service import TS
 from .socket import create_socket_server_thread
-import uuid
-import requests
+import uuid # noqa: F401
+import requests # noqa: F401
 
-__all__ = ['cache', 'utils', 'TS', 'create_socket_server_thread', 'uuid','requests']
+
+__all__ = ['cache', 'utils', 'TS', 'create_socket_server_thread', "constants"]
