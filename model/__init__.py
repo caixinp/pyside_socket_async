@@ -8,8 +8,8 @@
 @description   :   Model
 '''
 
-from .base import Base
 from .result import Result
+from .request import Request
 
 
-__all__ = ['Base', 'Result']
+__all__ = ['Result', 'Request']

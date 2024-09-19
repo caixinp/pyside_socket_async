@@ -9,21 +9,19 @@
 '''
 
 import socket
-import json
 from .b64 import base64_encode
 from ..config import SocketConfig
+from ..model import Request
 
 
 host, port = SocketConfig.get_host_port()
 
-def client_send_request(request_data: dict): 
+def client_send_request(request_data: Request): 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
     client_socket.connect((host, port))  
     
-    # 编码请求数据为json字符串  
-    request_data_json = json.dumps(request_data)  
-    # print(request_data_json)
-    request = base64_encode(request_data_json).encode()
+    # 编码请求数据为json字符串
+    request = request_data.encode()
     response = None  
     try:  
         # 发送请求数据给服务器  

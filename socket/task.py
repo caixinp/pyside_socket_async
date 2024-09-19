@@ -1,16 +1,21 @@
 import socket
-import json
 import threading
 
 from PySide6.QtCore import QRunnable, SignalInstance
 
-from pyside_socket_async.utils.b64 import base64_decode
+from ..utils.b64 import base64_decode
 from ..tasks_service import Tasks
+from ..model import Request
 
 
 class Task(QRunnable):
     # 任务处理函数
-    def __init__(self, client_socket:socket.socket, data, tasks: Tasks, client_connected:SignalInstance, stop_event:threading.Event):
+    def __init__(self, 
+                 client_socket:socket.socket, 
+                 data: bytes, 
+                 tasks: type[Tasks], 
+                 client_connected:SignalInstance, 
+                 stop_event:threading.Event):
         super().__init__()
         self.client_socket = client_socket
         self.data = data
@@ -30,8 +35,8 @@ class Task(QRunnable):
     # 处理数据函数
     def process_data(self, data: bytes):        
         data = base64_decode(data.decode()) # type: ignore
-        data_dict = json.loads(data)
-        result = self.tasks.run_task(data_dict)
+        request = Request.model_validate_json(data)
+        result = self.tasks.run_task(request)
         return result
 
     def emit_result(self, result):

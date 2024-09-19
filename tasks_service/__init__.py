@@ -7,6 +7,7 @@
 @Email   :   947105045@qq.com
 @description   :   任务服务模块
 '''
+
 from typing import Callable
 import pkgutil
 from importlib import import_module
@@ -19,7 +20,7 @@ from .tasks import Tasks
 from .task_base import TaskBase
 from .service_base import ServiceBase
 from .services import Services
-from ..model.result import Result
+from ..model import Result, Request
 
 
 class TS:
@@ -33,7 +34,7 @@ class TS:
         cls.service.add_service(tsItme)
 
     @classmethod
-    def get_all_task_names(cls):
+    def get_all_task_names(cls) -> list:
         task_names_list = []
         for task_name, task_class in cls.tasks.TaskClasses.items():
             task_names_list.append(task_name)
@@ -49,29 +50,36 @@ class TS:
             del cls.callback[id]
 
         except KeyError:
-            print(f"Callback with id {id} not found.")
+            raise ValueError(f"Callback with id {id} not found.")
             
     @classmethod
-    def send_data(cls, task_name,args, callback=None):
-        id = str(uuid.uuid4())
-        service = cls.service.get_service(task_name, callback)
-        cls.append_callback(id, service.callback)
-        send_data_dict = {"task_name": task_name, "id": id, "args": args}
-        service.request(send_data_dict)
+    def send_data(cls, task_name:str, args:dict, callback=None):
+        try:
+            id = str(uuid.uuid4())
+            service = cls.service.get_service(task_name, callback)
+            request = Request(id=id, task_name=task_name, args=args)
+            cls.append_callback(request.id, service.callback)
+            service.request(request)
+        except Exception as e:
+            raise ValueError(f"Task {task_name} not found. {e}")
 
     @Slot(dict)
     @classmethod
-    def on_client_connected(cls, response_data_dict):
-        task_name = response_data_dict.get("task_name")
-        id = response_data_dict.get("id", None)
-        if id is None:
-            print(f"{task_name} Task is not exist.")
-            return
-        cls.callback.get(id)(Result.dict_to_model(response_data_dict)) # type: ignore
-        cls.delete_callback(id)
+    def on_client_connected(cls, response_data_dict: dict):
+        if "task_name" not in response_data_dict or "id" not in response_data_dict:
+            raise ValueError("Response data must contain 'task_name' and 'id'.")
+        try:
+            response = Result.model_validate(response_data_dict)
+        except Exception as e:
+            raise ValueError(response_data_dict)
+        try:
+            cls.callback.get(response.id)(response) # type: ignore
+        except KeyError:
+            raise ValueError(f"Callback with id {response.id} not found.")
+        cls.delete_callback(response.id)
 
 
-def create_ts_item(task_func: Callable):
+def create_ts_item(task_func: Callable) -> TSItem:
     class DynamicService(ServiceBase):
         TASK_NAME = f"{task_func.__name__}"
         def __init__(self, callback_func, task_name=TASK_NAME):
@@ -80,15 +88,13 @@ def create_ts_item(task_func: Callable):
 
     class DynamicTask(TaskBase):
         TASK_NAME = "{task_func.__name__}"
-        def __init__(self, params=None):  
-            id = params.get("id")  # type: ignore
-            args = params.get("args") # type: ignore
-            super(DynamicTask, self).__init__(task_func.__name__, id, args)
+        def __init__(self, id: str, params: dict):
+            super(DynamicTask, self).__init__(task_func.__name__, id, params)
             self.task = task_func
     return TSItem(task_func.__name__, DynamicTask, DynamicService)
 
 
-def task_function(func):
+def task_function(func: Callable):
     func.is_task = True
     return func
 

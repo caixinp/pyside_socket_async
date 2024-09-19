@@ -17,7 +17,7 @@ from PySide6.QtCore import QObject, QThread, Slot, Signal, QThreadPool
 
 from ..config import SocketConfig
 from .task import Task
-from ..tasks_service import TS
+from ..tasks_service import TS, Tasks
 
 
 host, port = SocketConfig.get_host_port()
@@ -30,7 +30,7 @@ class SocketServerThread(QObject):
     
     _stop_event = threading.Event()  # 线程停止事件
     # 构造函数
-    def __init__(self, tasks):
+    def __init__(self, tasks: type[Tasks]):
         super().__init__()
         self.host = host
         self.port = port

@@ -9,7 +9,7 @@
 '''
 
 from ..utils import client_send_request  
-from ..model import Result
+from ..model import Result, Request
 
 
 class ServiceBase:
@@ -17,8 +17,8 @@ class ServiceBase:
     def __init__(self, task_name):
         self.task_name = task_name
 
-    def request(self, send_data_dict):
-        client_send_request(send_data_dict)
+    def request(self, request: Request):
+        client_send_request(request)
 
     def callback(self, result: Result):
         try:
@@ -27,10 +27,7 @@ class ServiceBase:
             
         except Exception as e:
             # print(f"{self.task_name} callback error: {e}")
-            Exception(f"{self.task_name} callback error: {e}")
-        
-        # finally:
-            # print(f"{self.task_name} callback result: {result}")
+            raise ValueError(f"{self.task_name} callback error: {e}")
 
     def callback_func(self, data):
         pass

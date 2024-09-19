@@ -8,10 +8,10 @@
 @description   :   utils 包
 '''
 
-from .socket_client import client_send_request
-from . import b64
+from .socket_client import client_send_request # noqa: F401
+from . import b64 # noqa: F401
 from .http_client import HttpClient
 from .parallel_tasks import ParallelTasks
 
 
-__all__ = ["client_send_request", "b64", "HttpClient", "ParallelTasks"]
+__all__ = ["HttpClient", "ParallelTasks"]

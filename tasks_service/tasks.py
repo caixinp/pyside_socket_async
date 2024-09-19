@@ -9,7 +9,7 @@
 '''
 
 from .ts_item import TSItem
-
+from ..model import Request
 
 class Tasks():
     TaskClasses = {}
@@ -19,15 +19,13 @@ class Tasks():
         cls.TaskClasses[tsItme.TASK_NAME] = tsItme.task_class
 
     @classmethod
-    def run_task(cls, params:dict):
-        task_name = params.get('task_name', "")
-        id = params.get('id', "")
-        args = params.get('args', None)
+    def run_task(cls, request:Request):
+        task_name = request.task_name
         TaskClass = cls.TaskClasses.get(task_name, lambda args: {
             "task_name": task_name, 
             "msg": "Task not found",
-            "params": params
-        }) 
-        result = TaskClass({"id":id, "args":args}).result_callback() if args is not None else TaskClass().result_callback()
+            "params": request
+        })
+        result = TaskClass(id=request.id, params=request.args).result_callback() if request.args is not None else TaskClass().result_callback() # type: ignore
         return result
     
