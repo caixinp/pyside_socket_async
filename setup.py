@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
@@ -13,8 +13,15 @@ setup(
     long_description_content_type="text/markdown",
     url="https://gitee.com/cai-xinpenge/pyside_socket_async",
     include_package_data=True,
-    packages=find_packages(),
-    package_dir={"pyside_socket_async": "."},
+    packages=(
+        find_packages(where=".")
+    ),
+    package_dir={
+        "": ".",
+        "pyside_socket_async":"./pyside_socket_async"
+    },
+    # packages=find_packages("pyside_socket_async", "pyside_socket_async.*"),
+    # package_dir={"pyside_socket_async":"../pyside_socket_async"},
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
