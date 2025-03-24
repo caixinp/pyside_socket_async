@@ -4,21 +4,23 @@
 
 简介：利用 socket、threding 和 Qt 插槽实现的异步通信框架。
 
+仓库地址：https://gitee.com/cai-xinpenge/pyside_socket_async.git
+
 ## 目录
 
 [TOC]
 
-## 1. 介绍
+## 介绍
 
 本框架旨在将运行时间较长的方法在一个线程中执行，最后通过插槽将结果返回给界面，其中涉及 socket 的通信，Qt多线程，Qt插槽，以及任务注册的概念。
 
-## 2. 主要实现思路
+## 主要实现思路
 
 在开启 pyside 应用的同时启动另一个线程，该线程启动一个socket 服务，用于与界面进行交互。
 
 在开启 socket 服务线程前，动态的检测某路径下的模块，将带有 @task_function 装饰器的方法动态的生成 TSItem类，并将它们添加到 TS 类的 services 和 tasks 中，tasks 会被初始化到 socket 线程中作为待调用的方法，而 services 则是主线程发送调用方法的指令，即但主线程调用 services 中的某个方法后，会向 socket 服务发送一个请求，该请求无需等待结果，socket 服务会开启一个线程调用对应的 task 方法，执行完成后，将结果通过插槽返回给主线程，TS 会通过某种机制将结果返回给对应 service 的回调函数。
 
-## 3. TS类的设计与回调管理
+## TS类的设计与回调管理
 
 1. 回调函数的注册：
    - 在 TS 类中，有一个字典用于管理回调函数。每当主线程调用某个 service 的方法时，框架会生成一个唯一的标识符（UUID），作为字典中的键，将对应的回调函数作为值存入字典中。
@@ -32,27 +34,50 @@
 4. 清理工作：
    - 在回调函数执行完毕后，框架会将字典中对应的键值对（即 UUID 和回调函数的对应关系）删除，一避免内存泄漏和保持字典的简洁。
 
-## 4. 依赖
+## 依赖
 ```
-pydantic==2.9.1
-PySide6==6.7.2
-requests==2.32.3
+pydantic>=2.9.1
+PySide6>=6.7.2
+requests>=2.32.3
 ```
 
-## 5. 使用案例
+## 使用案例
+
+安装
+
+```shell
+mkdir demo
+git clone https://gitee.com/cai-xinpenge/pyside_socket_async.git
+cd pyside_socket_async
+pip install .
+```
 
 目录结构
 
 ```
 demo
 ├── app
+│   ├── __init__.py
 │   ├── engine
 │   │   ├── __init__.py
-│   │   └── test.py
-│   ├── views
-│   │   ├── __init__.py
-│   │   └── window.py
-│   └── __init__.py
+│   │   ├── service
+│   │   │   ├── __init__.py
+│   │   │   └── test.py
+│   │   └── task
+│   │       ├── __init__.py
+│   │       └── test.py
+│   ├── interface
+│   │   ├── __init__.py
+│   │   └── window.py
+│   ├── model
+│   │   ├── __init__.py
+│   │   └── http_result.py
+│   ├── utils
+│   │   ├── __init__.py
+│   │   └── http_client.py
+│   └── views
+│       ├── __init__.py
+│       └── window.py
 └── main.py
 ```
 
@@ -71,19 +96,18 @@ if __name__ == "__main__":
 
 ```python
 import sys
-from .views import MainWindow
 
 from PySide6 import QtWidgets
+from pyside_socket_async.socket_thread import create_socket_server_thread
 
-from pyside_socket_async.socket import create_socket_server_thread
+from .views import MainWindow
 from .engine import task_service
-
 
 app = QtWidgets.QApplication(sys.argv)
 window_view = MainWindow()
 
+# 启动 socket 服务线程
 create_socket_server_thread(task_service, app)
-
 ```
 
 `app/engine/__init__.py`
@@ -91,40 +115,158 @@ create_socket_server_thread(task_service, app)
 ```python
 from pyside_socket_async.tasks_service import discover_and_mount_ts_item
 
-task_service, send_data = discover_and_mount_ts_item('app.engine')
+
+# 自动发现并挂载 task 类
+task_service = discover_and_mount_ts_item('app.engine.task')
 print(task_service.get_all_task_names())
+
 ```
 
-`app/engine/test.py`
+`app/engine/service/__init__.py`
+
+```python
+from .test import TestService 
+
+
+__all__ = ['TestService']
+```
+
+`app/engine/service/test.py`
+
+```python
+from typing import Union, Any
+
+from PySide6.QtWidgets import QMessageBox
+from requests import Response
+from pyside_socket_async import ServiceBase
+from pyside_socket_async.model import Result, ResponseError
+
+from app.interface import MainWindowInterface
+
+
+class TestService(ServiceBase):
+    @classmethod
+    def request(cls, data, window:Union[MainWindowInterface, Any]):
+        cls.window = window
+        cls.window.pushButton.setText("请稍等")
+        cls.window.pushButton.setEnabled(False)
+        return super().request("test", data)
+    
+    @classmethod
+    def callback(cls, result: Result):
+        response: Union[ResponseError, Response] = result.result
+        if response.status_code / 100 >= 3:
+            QMessageBox.warning(cls.window, "错误", f"{response.status_code}请求失败") # type: ignore
+            cls.window.pushButton.setEnabled(False)
+            cls.window.pushButton.setText("点击我")
+            return
+        
+        print(f"返回结果为：{response}")
+        # cls.window.pushButton.setText(f"{response.result}")
+        cls.window.pushButton.setEnabled(True)
+        cls.window.pushButton.setText("点击我")
+
+```
+
+`app/engine/task/__init__.py`
+
+```python
+from .test import test
+
+
+__all__ = ['test']
+
+```
+
+`app/engine/task/test.py`
 
 ```python
 import time
-from pyside_socket_async.tasks_service import task_function
+
+from pyside_socket_async import task_function
+from app.utils import httpClient
+
+
+@task_function
+import time
+
+from pyside_socket_async import task_function
+from app.utils import httpClient
 
 
 @task_function
 def test(args):
     time.sleep(5)
-    return "test"
+    result = httpClient.get("/")
+    if result.status_code == 200: 
+        with open("test.txt", "w") as f:
+            f.write(result.response.text) # type: ignore
+
+    return result
+    
+
 ```
 
-`app/view/__init__.py`
+`app/interface/__init__.py`
+
+```python
+from .window import MainWindowInterface
+
+
+__all__ = ["MainWindowInterface"]
+
+```
+
+`app/interface/window.py`
+
+```python
+from PySide6.QtWidgets import QPushButton
+
+
+# 定义接口类，方便在service中调用界面元素
+class MainWindowInterface:
+    def __init__(self):
+        self.pushButton: QPushButton
+
+```
+
+`app/utils/__init__.py`
+
+```python
+from .http_client import httpClient
+
+
+__all__ = ['httpClient']
+```
+
+`app/utils/http_client.py`
+
+```python
+from pyside_socket_async.utils import HttpClient
+
+
+httpClient = HttpClient(base_url="https://www.baidu.com")
+```
+
+`app/views/__init__.py`
 
 ```python
 from .window import MainWindow
 
 
 __all__ = ["MainWindow"]
+
 ```
 
-`app/view/window.py`
+`app/views/window.py`
 
 ```python
-from PySide6.QtWidgets import QPushButton, QMainWindow, QWidget, QVBoxLayout
+from PySide6.QtWidgets import QPushButton, QMainWindow, QWidget
 
-from ..engine import send_data
 from pyside_socket_async.model import Result
-from pyside_socket_async.utils import TaskStatus
+# from pyside_socket_async import send_data
+
+from ..engine.service import TestService
 
 
 class MainWindow(QMainWindow):
@@ -135,20 +277,24 @@ class MainWindow(QMainWindow):
         self.bind()
 
     def init_ui(self):
-        self.pushButtion = QPushButton(self.centralwidget)
-        self.pushButtion.setText("点击我")
+        self.pushButton = QPushButton(self.centralwidget)
+        self.pushButton.setText("点击我")
 
     def bind(self):
-        self.pushButtion.clicked.connect(self.test)
-    
+        self.pushButton.clicked.connect(self.test)
+   
     def test(self):
-        def callback(res: Result):
-            if res.status == TaskStatus.SUCCEEDED:
-                print(f"返回结果为：{res.result}")
-            else: 
-                print(res)
+        # 调用 service 类中的 request 方法，并将回调函数设置为 cls.callback
+        TestService().request({}, self)
+
+    # 建议使用 service 类中的 request 方法，简单的界面操作也可使用 send_data 方法
+    # def test(self):
+    #     def callback(data: Result):
+    #         print(f"返回结果为：{data.result}")
+    #         self.pushButton.setText(f"{data.result}")
         
-        send_data('test', {}, callback)
+    #     send_data("test", {}, callback)
+
 ```
 
 执行

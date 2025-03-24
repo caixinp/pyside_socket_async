@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+'''
+@File    :   task.py
+@Time    :   2024-09-21 22:07:12
+@Author  :   chakcy 
+@Email   :   947105045@qq.com
+@description   :   Task 类
+'''
+
 import socket
 import threading
 
@@ -22,6 +32,7 @@ class Task(QRunnable):
         self.client_connected = client_connected
         self.stop_event = stop_event
         self.tasks = tasks
+
     # 任务执行函数
     def run(self):
         result = self.process_data(self.data)
@@ -32,6 +43,7 @@ class Task(QRunnable):
         finally:
             if self.client_socket:
                 self.client_socket.close()
+    
     # 处理数据函数
     def process_data(self, data: bytes):        
         data = base64_decode(data.decode()) # type: ignore

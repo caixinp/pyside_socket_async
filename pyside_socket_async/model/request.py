@@ -1,5 +1,15 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+'''
+@File    :   request.py
+@Time    :   2024-09-21 22:05:46
+@Author  :   chakcy 
+@Email   :   947105045@qq.com
+@description   :   请求模型
+'''
+
 from pydantic import BaseModel, Field
-from ..utils.b64 import base64_encode, base64_decode
+from ..utils.b64 import base64_encode
 
 
 class Request(BaseModel):

@@ -10,6 +10,7 @@
 
 from ..constants.task_status import TaskStatus  
 import time
+import logging
 
 
 class TaskBase:
@@ -35,6 +36,8 @@ class TaskBase:
         except Exception as e:  
             self.set_result(f"Task {self.name} failed: {str(e)}")  
             self.set_status(TaskStatus.FAILED)  # 任务状态  
+            logging.error(f"{self.name} task error: \n{e}")
+            raise ValueError(f"Task {self.name} failed: {str(e)}")
 
         finally:
             self.updated_at = time.time()  # 任务更新时间 

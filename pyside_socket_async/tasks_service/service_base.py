@@ -10,6 +10,7 @@
 
 from ..utils import client_send_request  
 from ..model import Result, Request
+import logging
 
 
 class ServiceBase:
@@ -22,11 +23,12 @@ class ServiceBase:
 
     def callback(self, result: Result):
         try:
-            print(f"{self.task_name} callback result: {result}")
+            logging.info(f"{self.task_name} callback result: \n{result}")
             self.callback_func(result)
             
         except Exception as e:
             # print(f"{self.task_name} callback error: {e}")
+            logging.error(f"{self.task_name} callback error: \n{e}")
             raise ValueError(f"{self.task_name} callback error: {e}")
 
     def callback_func(self, data):

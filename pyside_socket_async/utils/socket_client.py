@@ -9,7 +9,6 @@
 '''
 
 import socket
-from .b64 import base64_encode
 from ..config import SocketConfig
 from ..model import Request
 
