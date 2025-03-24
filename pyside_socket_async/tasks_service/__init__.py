@@ -95,7 +95,7 @@ def create_ts_item(task_func: Callable) -> TSItem:
 
 
 def task_function(func: Callable):
-    func.is_task = True
+    func.is_task = True # type: ignore
     return func
 
 

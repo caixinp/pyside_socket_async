@@ -20,7 +20,7 @@ class Services:
         cls.services[tsItme.TASK_NAME] = tsItme.service_class
 
     @classmethod
-    def get_service(cls, name, callback=None):   
+    def get_service(cls, name, callback=None) -> ServiceBase:   
         service_class = cls.services.get(name)  
         if service_class is None:  
             raise KeyError(f"Service '{name}' not found.")  
